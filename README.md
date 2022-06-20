@@ -1,16 +1,91 @@
-# feeling_note
+![](https://velog.velcdn.com/images/smallsmile/post/acef5e3c-9733-4e58-be28-5475ff8a220b/image.png)
+### 개발 의도
+회사 앱이 세상의 빛을 본 지 약 4개월이 지난 시점이었습니다. 저는 문득 새로운 앱을 전혀 개발 하지 않고 있다는 것을 깨달았습니다. 이미 출시 된 회사 앱을 유지·보수만 하고 있었던 겁니다. 물론 약간의 추가 개발은 있긴 했지만, 손에 꼽을 정도였죠.
 
-A new Flutter project.
+'나 이대로 괜찮을까' 걱정 됐습니다. 그래서 간단한 사이드 프로젝트를 혼자 진행 하리라 다짐 했습니다. 바닥부터 끝까지 혼자서요. 광고를 달아서 몇푼 용돈이나 벌어볼까 헛된 기대도 하면서요. 결론부터 말씀 드리자면 광고는 안 달았습니다.
 
-## Getting Started
+### 개발 목표
+목표는 아래 두가지였습니다.     
+__1. 서드 파티 라이브러리 사용 최소화__     
+__2. 완성해서 출시 할 것__
 
-This project is a starting point for a Flutter application.
+최우선 목표는 출시 하는 것이었습니다. 시작 하는건 쉽지만 마무리 짓는건 어렵다는 말이 있지요. 프로젝트를 생성하고 개발에 들어간 이상 반드시 출시까지 해야한다는 마음가짐으로 작업 했습니다.
 
-A few resources to get you started if this is your first Flutter project:
+서드파티 라이브러리 사용을 최소화 하자는건, 가능한 한 플러터 프레임워크 자체만으로 앱을 만들고자 하는 의도였습니다. 타인이 만들어놓은 라이브러리에 지나치게 의존 하면 실력도 안 늘 뿐더러 유지 보수가 어렵습니다. 
 
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
+### 사용된 패키지 목록
 
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+>  flutter_riverpod: ^1.0.3    
+  json_serializable: ^6.1.5    
+  image_picker: ^0.8.4+11    
+  sqflite: ^2.0.2    
+  path: ^1.8.0    
+  lottie: ^1.2.2    
+  file_picker: ^4.6.1   
+  animated_text_kit: ^4.2.1    
+  flutter_native_splash: ^2.1.1    
+  kakao_flutter_sdk_user: ^1.1.1    
+  sign_in_with_apple: ^4.0.0    
+  google_sign_in: ^5.3.3    
+  flutter_naver_login: ^1.6.0    
+  fl_chart: ^0.51.0    
+  focus_detector: ^2.0.1    
+  flutter_svg: ^1.0.3    
+  firebase_database: ^9.0.15    
+  firebase_storage: ^10.2.18    
+  
+사용한 라이브러리들입니다. 위에서 '라이브러리를 적게 사용하자' 운운 해놓고선 이렇게 많이 썼습니다. 특히 ```focus_detector```는 안 써도 딱히 문제 없는데, 사실 기능을 직접 개발 하기 귀찮아서 쓴 것입니다. 반성 할 부분입니다.
+
+
+### 돌이켜 볼 만한 부분 ①: 로그인
+![](https://velog.velcdn.com/images/smallsmile/post/6264279a-3ef7-4a53-97a1-085936e5bf33/image.gif)    
+    
+파이어베이스 서비스를 이용해 인증처리 합니다. 구글 로그인, 이메일로 로그인이 가능합니다. 카카오 로그인과 네이버 로그인도 기능 개발은 됐지만 최종적으론 제외 했습니다. 파이어베이스의 인증 서비스가 네이버와 카카오를 지원하지 않기 때문입니다. 백엔드 쪽 추가 개발이 가능하다면 적용 할 수 있다고 들었는데, 나중에 기회를 봐 적용 하려 합니다. 텍스트 애니메이션은 ```animated_text_kit```을, 책이 넘어가는 애니메이션은 lottie 애니메이션을 사용 했습니다.
+
+### 돌이켜 볼 만한 부분 ②: 일기 쓰기
+![](https://velog.velcdn.com/images/smallsmile/post/23a45842-bea5-498f-ac92-cde634841cee/image.jpeg)    
+    
+개발하면서 가장 문제가 많았던 페이지 입니다. 초기 기획과 비교 했을 때 가장 많이 변한 곳이기도 하구요. 초기 기획에선 기다란 페이지에 오토 스크롤을 달았습니다. 사용자에게 단계를 밟는 느낌을 주기 위해서, 스텝을 하나씩 진행 할 때 마다 스크롤이 아래로 내려가는 방식이었습니다. 하지만 일기를 수정 할 때나 이전 스텝으로 돌아가야 할 때 답답한 느낌을 줬고, '__사용자는 정보를 한 눈에 파악하고 싶어 한다__'라는 UX적 격언(?)에 따라 현재와 같은 모습으로 변경 했습니다.
+
+이미지는 앨범에서 선택 할 수도 있고, 카메라로 촬영 할 수도 있습니다. 이미지가 선택 됐다면 즉시 서버로 전송 됩니다. 그후 서버로부터 이미지를 다운 받을 수 있는 url을 받고, 해당 url을 일기 객체에 담습니다. 즉, 이미지 업로드는 [완료] 버튼을 눌렀을 때가 아니라 이미지를 __선택 했을 때__ 합니다.
+
+감정을 선택하면 ```TextFormField```가 활성화 돼 일기를 쓸 수 있게 됩니다. 한번에 선택 할 수 있는 감정은 최대 3개입니다. '기록으로 남기고 싶은 감정을 신중하게 선택하라'는 의도입니다. 
+
+### 돌이켜 볼 만한 부분 ③: 일기 리스트	
+![](https://velog.velcdn.com/images/smallsmile/post/fe990915-67b7-4651-8796-50d9061d3626/image.jpeg)    
+    
+일기 리스트는 기기 내부 DB와 서버쪽 DB 양쪽에 저장 됩니다. 기기 내부 DB는 ```sqflite```를 이용 했고, 서버쪽 DB는 ```파이어베이스 리얼타임 데이터베이스```입니다. 처음엔 파이어베이스만 이용 했는데, 응답이 너무 느려서 __체감 속도를 높이고자__ 기기 내부 DB와 혼용하게 됐습니다.
+
+기본적으로 기기 내부 DB에서 리스트를 읽어 표시하고, 파이어베이스 DB와 비교해 __차이점이 있다면 화면을 업데이트__ 하는 방식입니다. 코드 구조를 간략히 설명하자면 아래와 같습니다.
+
+```dart
+FutureBuilder(
+	future: fetchDiariesFromFirebaseDB(), //파이어베이스 DB에 요청
+    builder:(context, snapshot) {
+   		if(snapshot.connectionState == ConnectionState.done) {
+        	//파이어베이스에서 요청한 데이터를 받았음
+            diaries = snapshot.data as dynamic;
+            return renderDiaryList();
+        } else {
+        	//파이어베이스에서 아직 응답을 받지 못했음.
+            //이때 DB의 일기들을 보여준다
+            diaries = fetchDiarisFromLocalDB();
+            return renderDiaryList();
+        }
+    }
+)
+```
+connectionState가 done이 아닐 때, 즉 아직 로딩 중일 때 로컬 DB의 일기들을 보여줍니다. 사용자는 로딩 중일 때도 일기 리스트를 볼 수 있기 때문에 체감 로딩 시간은 거의 없다시피 합니다.
+
+
+### 느낀점
+__광고가 들어갈 것까지 고려 해서 디자인 해야 합니다.__ 광고는 생각도 안 하고 작업 했다가, 마무리 단계에서 광고를 넣으려고 했더니 도저히 넣을 곳이 없었습니다. 어디에 넣어도 화면의 조화를 망치는 꼴이었습니다. 그래서 결국 광고를 넣지 못했습니다. 유료 앱이 아니라면, 광고를 어디에 넣어야 조화로울까 정도는 생각하고 디자인 해야 합니다. 물론 광고라는게 어디에 넣어도 분위기를 망치는 친구들이지만, 그럼에도 최대한 자연스러운 배치를 찾아야 합니다.
+
+__처음 기획 할 때 잘 해야 합니다__. 대충 러프 한 아이디어만 가진 상태로 프로그래밍에 뛰어들면 안 됩니다. __최소한 기능을 명확히 하고, 각 화면에대한 레이아웃 정도는 생각 한 상태로 코딩을 시작__해야 합니다. 개발은 프로그래밍만이 아니라는 것, 반드시 기억해야 합니다. 대충 '이렇게 하면 되겠지'라며 바로 코딩부터 시작했다가, 뒤로 갈수록 스파게티 코드가 만들어졌습니다. 처음부터 기획이 명확 했다면 여기서 꼬이지도 않을텐데. 몇번이고 후회 했습니다.
+
+
+
+
+
+----
+읽어주셔서 감사합니다.
