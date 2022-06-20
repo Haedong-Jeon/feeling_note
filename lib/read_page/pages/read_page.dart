@@ -223,7 +223,7 @@ class _ReadPageState extends State<ReadPage>
           widget.appStateProvider?.setTodaysDiaryNotDone();
         }
         if (emotion != null) {
-          DiaryDatabase.clearDiary();
+          // DiaryDatabase.clearDiary();
           DiaryDatabase.insertDiary(emotion);
         }
       }
