@@ -73,7 +73,7 @@ class _WritePageState extends State<WritePage> with TickerProviderStateMixin {
     DateTime today =
         DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
 
-    if (today.isAfter(lastAtDB) || today.isAtSameMomentAs(lastAtDB)) {
+    if (today.isAtSameMomentAs(lastAtDB)) {
       setState(() {
         alreadyWrote = true;
       });
