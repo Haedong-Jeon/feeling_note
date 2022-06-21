@@ -835,8 +835,12 @@ class _ReadPageState extends State<ReadPage>
                           );
                       },
                       key: Key(diaries?[index].first.id.toString() ?? 'NO_KEY'),
-                      child: DiaryListCellWidget(
-                        emotions: diaries![index],
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                            left: 5, right: 5, top: 10, bottom: 10),
+                        child: DiaryListCellWidget(
+                          emotions: diaries![index],
+                        ),
                       ),
                     ),
                     itemCount: diaries?.length ?? 0,
