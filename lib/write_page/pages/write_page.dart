@@ -20,6 +20,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
 
+//TODO: 이미지 압축 할 것!
+
 class WritePage extends StatefulWidget {
   bool isEditing = false;
   List<Emotion> emotionsForEdit = [];
