@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:feeling_note/DB/diary_database.dart';
 import 'package:feeling_note/datas/app_state_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -61,6 +63,8 @@ class _AppleLoginButtonState extends State<GoogleLoginButton>
                 "login_method": "google_sign_in",
                 "last_login_at": DateTime.now().toString(),
               });
+
+              //백엔드 연결 됐을 땐, 백엔드로 googleAuth.accessToken을 전달 해야 한다.
               await DiaryDatabase.init();
               bool todayDone = await DiaryDatabase.isTodayDiaryWritten();
               if (todayDone) {
