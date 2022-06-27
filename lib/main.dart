@@ -151,20 +151,27 @@ class _MyAppStartPageState extends ConsumerState<MyAppStartPage>
         appBar: AppBar(
           backgroundColor: appState.isLogined ? bottomNavBarColor : Colors.red,
           actions: [
-            Flexible(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 18),
-                child: Text(
+            Builder(builder: (context) {
+              String userIdentity =
                   FirebaseAuth.instance.currentUser?.displayName ??
                       FirebaseAuth.instance.currentUser?.email ??
-                      "",
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white,
+                      "";
+              if (userIdentity.contains("privaterelay")) {
+                userIdentity = "애플 비공개 계정";
+              }
+              return Flexible(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 18),
+                  child: Text(
+                    userIdentity,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            }),
             TextButton(
               onPressed: () async {
                 await FirebaseAuth.instance.signOut();

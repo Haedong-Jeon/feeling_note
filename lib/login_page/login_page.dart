@@ -199,7 +199,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                       position: slideAni,
                       child: Column(
                         children: [
-                          GoogleLoginButton(),
+                          Platform.isIOS
+                              ? AppleLoginButton()
+                              : GoogleLoginButton(),
                           SizedBox(height: 10),
                           EmailLoginButton(),
                         ],
