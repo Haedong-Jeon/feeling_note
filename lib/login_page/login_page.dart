@@ -1,21 +1,27 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:feeling_note/constants/colors.dart';
+import 'package:feeling_note/constants/token.dart';
+import 'package:feeling_note/constants/url.dart';
 import 'package:feeling_note/datas/app_state_provider.dart';
 import 'package:feeling_note/login_page/login_button/apple_login_button.dart';
 import 'package:feeling_note/login_page/login_button/email_login_button.dart';
 import 'package:feeling_note/login_page/login_button/google_login_button.dart';
 import 'package:feeling_note/login_page/login_button/kakao_login_button.dart';
 import 'package:feeling_note/login_page/login_button/naver_login_button.dart';
+import 'package:feeling_note/utils/api_connector.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   static const valueKey = ValueKey("login_page");
+
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
@@ -90,11 +96,19 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Consumer(builder: (context, ref, child) {
       var stateProvider = ref.watch(appStateProvider);
-      WidgetsBinding.instance!.addPostFrameCallback((timeStamp) {
-        if (FirebaseAuth.instance.currentUser != null) {
+      WidgetsBinding.instance!.addPostFrameCallback((timeStamp) async {
+        bool tokenValid = await APIConnector.isTokenValid();
+        if(tokenValid) {
           stateProvider.showLoginPage(false);
           stateProvider.setIsLogined(true);
+          return;
+        } else {
+          stateProvider.showLoginPage(true);
+          stateProvider.setIsLogined(false);
+          return;
         }
+
+
       });
       return Stack(
         children: [

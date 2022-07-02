@@ -1,12 +1,16 @@
 import 'dart:developer';
 
+import 'package:dio/dio.dart';
 import 'package:feeling_note/DB/diary_database.dart';
+import 'package:feeling_note/constants/token.dart';
+import 'package:feeling_note/constants/url.dart';
 import 'package:feeling_note/datas/app_state_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class GoogleLoginButton extends StatefulWidget {
   const GoogleLoginButton({
@@ -57,14 +61,33 @@ class _AppleLoginButtonState extends State<GoogleLoginButton>
               await FirebaseAuth.instance.signInWithCredential(credential);
               String uid =
                   FirebaseAuth.instance.currentUser?.uid ?? "ERROR_USER";
-              DatabaseReference ref =
-                  FirebaseDatabase.instance.ref("users/${uid}");
-              await ref.set({
-                "login_method": "google_sign_in",
-                "last_login_at": DateTime.now().toString(),
-              });
+              Dio dio = Dio();
+              var response = await dio.post(
+                UserUri.create,
+                data: {
+                  "login_method": "by_google_sign_in",
+                  "access_token_for_sns": googleAuth?.accessToken.toString(),
+                  "email": googleUser?.email ?? "",
+                  "auth_uid": uid,
+                },
+              );
 
-              //백엔드 연결 됐을 땐, 백엔드로 googleAuth.accessToken을 전달 해야 한다.
+              AccessToken().updateToken(response.data["access_token"].toString());
+              AccessToken()
+                  .updateExpireDate(response.data["access_token_expire_at"].toString());
+
+              RefreshToken().updateToken(response.data["refresh_token"].toString());
+              RefreshToken()
+                  .updateExpireDate(response.data["refresh_token_expire_at"].toString());
+
+              final prefs = await SharedPreferences.getInstance();
+
+              await prefs.setString("access_token", AccessToken().token);
+              await prefs.setString("access_token_expire_at", AccessToken().expireAt);
+
+              await prefs.setString("refresh_token", RefreshToken().token);
+              await prefs.setString("refresh_token_expire_at", RefreshToken().expireAt);
+
               await DiaryDatabase.init();
               bool todayDone = await DiaryDatabase.isTodayDiaryWritten();
               if (todayDone) {

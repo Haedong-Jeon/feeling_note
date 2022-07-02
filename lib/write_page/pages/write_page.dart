@@ -1,11 +1,15 @@
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:feeling_note/DB/diary_database.dart';
 import 'package:feeling_note/constants/colors.dart';
 import 'package:feeling_note/constants/emotion.dart';
+import 'package:feeling_note/constants/token.dart';
+import 'package:feeling_note/constants/url.dart';
 import 'package:feeling_note/datas/app_state_provider.dart';
 import 'package:feeling_note/datas/emotion_provider.dart';
+import 'package:feeling_note/utils/api_connector.dart';
 import 'package:feeling_note/write_page/pages/already_written_page.dart';
 import 'package:feeling_note/write_page/widgets/chips/emotion_chip.dart';
 
@@ -33,6 +37,7 @@ class WritePage extends StatefulWidget {
 class _WritePageState extends State<WritePage> with TickerProviderStateMixin {
   List<String> selectedImagesPaths = [];
   List<String> selectedImagesDepths = [];
+  List<int> selectedImagesIds = [];
   List<int> editTargetIds = [];
   bool? alreadyWrote;
   List<TextEditingController> textControllersForEdit = [];
@@ -59,18 +64,12 @@ class _WritePageState extends State<WritePage> with TickerProviderStateMixin {
       });
       return;
     }
-    String userUid = FirebaseAuth.instance.currentUser?.uid ?? "ERROR_USER";
-    DatabaseReference databaseReference = await FirebaseDatabase.instance
-        .ref("diaries/${userUid}/lastDiaryWroteAt");
-    DatabaseEvent data = await databaseReference.once();
-    if (data.snapshot.value == null) {
-      setState(() {
-        alreadyWrote = false;
-      });
-      return;
+
+    final meResponse = await APIConnector.getMe();
+    DateTime? lastAtDB = DateTime.tryParse(meResponse["last_diary_wrote_at"]);
+    if (lastAtDB == null) {
+      lastAtDB = DateTime.now().subtract(Duration(days: 1));
     }
-    String date = data.snapshot.value as String;
-    DateTime lastAtDB = DateTime.parse(date);
     lastAtDB = DateTime(lastAtDB.year, lastAtDB.month, lastAtDB.day);
     DateTime today =
         DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
@@ -205,13 +204,7 @@ class _WritePageState extends State<WritePage> with TickerProviderStateMixin {
                                       .reduce((value, element) =>
                                           value + "," + element);
                                 }
-
-                                DatabaseReference databaseReference =
-                                    FirebaseDatabase.instance
-                                        .ref("diaries/${userUid}");
-                                await databaseReference.set({
-                                  "lastDiaryWroteAt": DateTime.now().toString()
-                                });
+                                //로컬 DB 처리
                                 for (Emotion emo in selectedEmotion) {
                                   emo.imageOnlinePath = joinedImagePath;
                                   if (emo.lastFeelTime == "") {
@@ -233,9 +226,10 @@ class _WritePageState extends State<WritePage> with TickerProviderStateMixin {
                                   emo.userUid = userUid;
                                   DiaryDatabase.insertDiary(emo);
                                 }
-                                // }
+                                //서버
                                 await uploadToServer(
                                     imageOnlinePaths: selectedImagesPaths);
+
                                 if (mounted) {
                                   setState(() {
                                     isLoading = false;
@@ -388,13 +382,7 @@ class _WritePageState extends State<WritePage> with TickerProviderStateMixin {
                                                     .emotionList.first.id: f
                                               });
                                             });
-                                            String userUid = FirebaseAuth
-                                                    .instance
-                                                    .currentUser
-                                                    ?.uid ??
-                                                "ERROR_USER";
-                                            final storageRef =
-                                                FirebaseStorage.instance.ref();
+
                                             return await Future.forEach(
                                                 imageFiles, (element) async {
                                               element as Map<int, File>;
@@ -402,33 +390,37 @@ class _WritePageState extends State<WritePage> with TickerProviderStateMixin {
                                               if (File(
                                                       element.values.first.path)
                                                   .existsSync()) {
-                                                final ref = storageRef.child(
-                                                    "${userUid}/${element.keys.first}/${element.values.first.path.split('/').last}");
+                                                FormData formData =
+                                                    new FormData.fromMap({
+                                                  'file': await MultipartFile
+                                                      .fromFile(
+                                                    element.values.first.path,
+                                                    filename: element
+                                                        .values.first.path
+                                                        .split("/")
+                                                        .last,
+                                                  )
+                                                });
 
-                                                final task = ref.putFile(
-                                                    element.values.first);
-                                                task.onError(
-                                                    (error, stackTrace) {
+                                                try {
+                                                  final response =
+                                                      await APIConnector
+                                                          .imageUpload(
+                                                              data: formData);
+                                                  selectedImagesPaths.add(
+                                                      response[
+                                                          "image_online_path"]);
+                                                  selectedImagesIds.add(
+                                                      response["image_id"]);
                                                   setState(() {
                                                     isLoading = false;
-                                                    failLottieController
-                                                        .forward();
-                                                    isError = true;
                                                   });
-                                                  return task;
-                                                });
-                                                task.then((p) async {
-                                                  String url = await ref
-                                                      .getDownloadURL();
-
-                                                  selectedImagesPaths.add(url);
-                                                  selectedImagesDepths.add(
-                                                      "${userUid}/${element.keys.first}/${element.values.first.path.split('/').last}");
-                                                  log("photo: ${userUid}/${element.keys.first}/${element.values.first.path.split('/').last}");
+                                                } catch (e) {
+                                                  log(e.toString());
                                                   setState(() {
                                                     isLoading = false;
                                                   });
-                                                });
+                                                }
                                               } else {
                                                 log("not exist file ${element.values.first.path}");
                                               }
@@ -469,43 +461,45 @@ class _WritePageState extends State<WritePage> with TickerProviderStateMixin {
                                           setState(() {
                                             isLoading = true;
                                           });
-                                          String userUid = FirebaseAuth
-                                                  .instance.currentUser?.uid ??
-                                              "ERROR_USER";
-                                          final storageRef =
-                                              FirebaseStorage.instance.ref();
+
                                           return await Future.forEach(
                                               imageFiles, (element) async {
                                             element as Map<int, File>;
 
                                             if (File(element.values.first.path)
                                                 .existsSync()) {
-                                              final ref = storageRef.child(
-                                                  "${userUid}/${element.keys.first}/${element.values.first.path.split('/').last}");
+                                              FormData formData =
+                                                  new FormData.fromMap({
+                                                'file': await MultipartFile
+                                                    .fromFile(
+                                                  element.values.first.path,
+                                                  filename: element
+                                                      .values.first.path
+                                                      .split("/")
+                                                      .last,
+                                                )
+                                              });
 
-                                              final task = ref.putFile(
-                                                  element.values.first);
-                                              task.onError((error, stackTrace) {
+                                              try {
+                                                final response =
+                                                    await APIConnector
+                                                        .imageUpload(
+                                                            data: formData);
+                                                selectedImagesPaths.add(
+                                                    response[
+                                                        "image_online_path"]);
+
+                                                selectedImagesIds
+                                                    .add(response["image_id"]);
                                                 setState(() {
                                                   isLoading = false;
-                                                  failLottieController
-                                                      .forward();
-                                                  isError = true;
                                                 });
-                                                return task;
-                                              });
-                                              task.then((p) async {
-                                                String url =
-                                                    await ref.getDownloadURL();
-
-                                                selectedImagesPaths.add(url);
-                                                selectedImagesDepths.add(
-                                                    "${userUid}/${element.keys.first}/${element.values.first.path.split('/').last}");
-                                                log("photo: ${userUid}/${element.keys.first}/${element.values.first.path.split('/').last}");
+                                              } catch (e) {
                                                 setState(() {
                                                   isLoading = false;
                                                 });
-                                              });
+                                                log(e.toString());
+                                              }
                                             } else {
                                               log("not exist file ${element.values.first.path}");
                                             }
@@ -563,26 +557,16 @@ class _WritePageState extends State<WritePage> with TickerProviderStateMixin {
                                                     top: -10,
                                                     child: InkWell(
                                                       onTap: () async {
-                                                        String userUid =
-                                                            FirebaseAuth
-                                                                    .instance
-                                                                    .currentUser
-                                                                    ?.uid ??
-                                                                "ERROR_USER";
-                                                        final storageRef =
-                                                            FirebaseStorage
-                                                                .instance
-                                                                .ref();
-                                                        log("delete : ${selectedImagesDepths[i]}");
-                                                        storageRef
-                                                            .child(
-                                                                selectedImagesDepths[
-                                                                    i])
-                                                            .delete();
                                                         selectedImagesPaths
                                                             .removeAt(i);
-                                                        selectedImagesDepths
-                                                            .removeAt(i);
+                                                        Dio dio = Dio();
+                                                        dio.options.headers[
+                                                                "token"] =
+                                                            AccessToken().token;
+                                                        await dio.delete(
+                                                            ImageUri.delete(
+                                                                selectedImagesIds[
+                                                                    i]));
                                                         setState(() {});
                                                       },
                                                       child: CircleAvatar(
@@ -750,36 +734,13 @@ class _WritePageState extends State<WritePage> with TickerProviderStateMixin {
     if (diaries == null) {
       return;
     }
-
-    String userUid = FirebaseAuth.instance.currentUser?.uid ?? "ERROR_USER";
-    //텍스트 우선 업로드
     await Future.forEach(diaries, (diary) async {
       diary as Emotion;
-      DatabaseReference databaseReference =
-          FirebaseDatabase.instance.ref("diaries/${userUid}/${diary.id}");
-
-      if (widget.isEditing) {
-        await Future.forEach(editTargetIds, (element) async {
-          element as int;
-          log("remove at ${element}");
-          await FirebaseDatabase.instance
-              .ref("diaries/${userUid}/${element}")
-              .remove();
-        });
-      }
-      await databaseReference.set({
-        "user": userUid,
-        "content": diary.content,
-        "lastFeelTime": diary.lastFeelTime,
-        "lastFeelDate": diary.lastFeelDate,
-        "inKor": diary.inKor,
-        "isPositiveEmotion": diary.isPositiveEmotion,
-        "id": diary.id,
-        "emoji": diary.emoji,
-        "imageOnlinePath": diary.imageOnlinePath,
-        "imageOnlineStorageDepth": diary.imageOnlineStorageDepth,
-        "deviceImagePath": diary.imagePath,
-      });
+      dynamic data = await APIConnector.emotionUpload(diary: diary);
+      int removeTargetId = diary.id;
+      diary.id = data["id"];
+      DiaryDatabase.insertDiary(diary);
+      DiaryDatabase.removeDiary(removeTargetId);
     });
   }
 }

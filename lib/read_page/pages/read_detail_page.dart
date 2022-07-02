@@ -6,6 +6,7 @@ import 'package:feeling_note/constants/colors.dart';
 import 'package:feeling_note/constants/emotion.dart';
 import 'package:feeling_note/datas/app_state_provider.dart';
 import 'package:feeling_note/datas/emotion_provider.dart';
+import 'package:feeling_note/utils/api_connector.dart';
 import 'package:feeling_note/write_page/pages/write_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -79,53 +80,13 @@ class _ReadDetailPageState extends State<ReadDetailPage> {
                                 actions: [
                                   TextButton(
                                     onPressed: () async {
-                                      String userUid = FirebaseAuth
-                                              .instance.currentUser?.uid ??
-                                          "ERROR_USER";
-                                      widget.emotions.forEach((element) async {
+                                      await Future.forEach(widget.emotions,
+                                          (element) async {
+                                        element as Emotion;
+                                        await APIConnector.deleteEmotion(
+                                            emotionId: element.id);
                                         DiaryDatabase.removeDiary(element.id);
-                                        DatabaseReference databaseReference =
-                                            FirebaseDatabase.instance.ref(
-                                          "diaries/${userUid}/${element.id.toString().replaceAll(userUid, "")}",
-                                        );
-                                        databaseReference.remove();
-
-                                        final storageRef =
-                                            FirebaseStorage.instance.ref();
-                                        final itemList = await storageRef
-                                            .child(
-                                                "${userUid}/${element.id.toString().replaceAll(userUid, "")}")
-                                            .listAll();
-                                        itemList.items.forEach((element) {
-                                          // element as Reference;
-                                          element.delete();
-                                        });
                                       });
-                                      DatabaseReference databaseReference =
-                                          FirebaseDatabase.instance
-                                              .ref("diaries/${userUid}");
-                                      DatabaseEvent event =
-                                          await databaseReference.once();
-                                      List<DataSnapshot> children =
-                                          event.snapshot.children.toList();
-                                      List<DataSnapshot> diaryList = children
-                                          .where((element) =>
-                                              element.key != "lastDiaryWroteAt")
-                                          .toList();
-                                      DateTime date = DateTime(2314, 1, 1);
-                                      diaryList.forEach((element) {
-                                        if (element.key == "lastFeelDate") {
-                                          DateTime feelDate = DateTime.parse(
-                                              element.value.toString());
-                                          if (feelDate.isAfter(date)) {
-                                            date = feelDate;
-                                          }
-                                        }
-                                      });
-                                      await databaseReference.set({
-                                        "lastDiaryWroteAt": date.toString()
-                                      });
-
                                       bool todayDone = await DiaryDatabase
                                           .isTodayDiaryWritten();
                                       if (todayDone) {

@@ -12,6 +12,7 @@ import 'package:feeling_note/read_page/widgets/diary_list_cell_widget.dart';
 import 'package:feeling_note/read_page/widgets/empty_diaries_widget.dart';
 import 'package:feeling_note/read_page/widgets/expandable_fab.dart';
 import 'package:feeling_note/read_page/widgets/filter.dart';
+import 'package:feeling_note/utils/api_connector.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -19,12 +20,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:feeling_note/DB/diary_database.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
-import 'package:sqflite/sqlite_api.dart';
 
 class ReadPage extends StatefulWidget {
   AppStateChangeNotifier? appStateProvider;
+
   @override
   State<ReadPage> createState() => _ReadPageState();
 }
@@ -45,6 +45,7 @@ class _ReadPageState extends State<ReadPage>
       color: Colors.white,
     ),
   );
+
   @override
   void initState() {
     futureForFetchFromServer = fetchFromServer();
@@ -57,175 +58,171 @@ class _ReadPageState extends State<ReadPage>
   }
 
   Future fetchFromServer() async {
-    String userUid = FirebaseAuth.instance.currentUser?.uid ?? "ERROR_USER";
-    DatabaseReference databaseReference =
-        FirebaseDatabase.instance.ref("diaries/${userUid}");
-    DatabaseEvent datas = await databaseReference.once();
-    return await Future.forEach(datas.snapshot.children, (element) async {
-      element as DataSnapshot;
-      if (element.key != "lastDiaryWroteAt") {
-        dynamic value = element.value as dynamic;
-        Emotion? emotion;
+    final allDiaries = await APIConnector.getAllEmotions();
+    final me = await APIConnector.getMe();
+    return await Future.forEach(allDiaries, (element) async {
+      Emotion? emotion;
+      element as dynamic;
 
-        switch (value["inKor"]) {
-          case "행복":
-            emotion = HappyEmotion(
-              lastFeelDate: value["lastFeelDate"],
-            )
-              ..userUid = userUid
-              ..emoji = value["emoji"]
-              ..imageOnlinePath = value["imageOnlinePath"]
-              ..lastFeelTime = value["lastFeelTime"]
-              ..content = value["content"]
-              ..inKor = value["inKor"]
-              ..id = value["id"]
-              ..imagePath = value["deviceImagePath"]
-              ..isPositiveEmotion = value["isPositiveEmotion"]
-              ..imageOnlineStorageDepth = value["imageOnlineStorageDepth"]
-              ..isSelected = true;
-            break;
-          case "분노":
-            emotion = AngryEmotion(
-              lastFeelDate: value["lastFeelDate"],
-            )
-              ..userUid = userUid
-              ..emoji = value["emoji"]
-              ..imageOnlinePath = value["imageOnlinePath"]
-              ..lastFeelTime = value["lastFeelTime"]
-              ..content = value["content"]
-              ..inKor = value["inKor"]
-              ..id = value["id"]
-              ..imagePath = value["deviceImagePath"]
-              ..isPositiveEmotion = value["isPositiveEmotion"]
-              ..imageOnlineStorageDepth = value["imageOnlineStorageDepth"]
-              ..isSelected = true;
-            break;
-          case "슬픔":
-            emotion = SadEmotion(
-              lastFeelDate: value["lastFeelDate"],
-            )
-              ..userUid = userUid
-              ..emoji = value["emoji"]
-              ..imageOnlinePath = value["imageOnlinePath"]
-              ..lastFeelTime = value["lastFeelTime"]
-              ..content = value["content"]
-              ..inKor = value["inKor"]
-              ..id = value["id"]
-              ..imagePath = value["deviceImagePath"]
-              ..isPositiveEmotion = value["isPositiveEmotion"]
-              ..imageOnlineStorageDepth = value["imageOnlineStorageDepth"]
-              ..isSelected = true;
-            break;
-          case "즐거움":
-            emotion = EnjoyEmotion(
-              lastFeelDate: value["lastFeelDate"],
-            )
-              ..userUid = userUid
-              ..emoji = value["emoji"]
-              ..imageOnlinePath = value["imageOnlinePath"]
-              ..lastFeelTime = value["lastFeelTime"]
-              ..content = value["content"]
-              ..inKor = value["inKor"]
-              ..id = value["id"]
-              ..imagePath = value["deviceImagePath"]
-              ..isPositiveEmotion = value["isPositiveEmotion"]
-              ..imageOnlineStorageDepth = value["imageOnlineStorageDepth"]
-              ..isSelected = true;
-            break;
-          case "우울":
-            emotion = DepressedEmotion(
-              lastFeelDate: value["lastFeelDate"],
-            )
-              ..userUid = userUid
-              ..emoji = value["emoji"]
-              ..imageOnlinePath = value["imageOnlinePath"]
-              ..lastFeelTime = value["lastFeelTime"]
-              ..content = value["content"]
-              ..inKor = value["inKor"]
-              ..id = value["id"]
-              ..imagePath = value["deviceImagePath"]
-              ..isPositiveEmotion = value["isPositiveEmotion"]
-              ..imageOnlineStorageDepth = value["imageOnlineStorageDepth"]
-              ..isSelected = true;
-            break;
-          case "만족":
-            emotion = SatisfiedEmotion(
-              lastFeelDate: value["lastFeelDate"],
-            )
-              ..userUid = userUid
-              ..emoji = value["emoji"]
-              ..imageOnlinePath = value["imageOnlinePath"]
-              ..lastFeelTime = value["lastFeelTime"]
-              ..content = value["content"]
-              ..inKor = value["inKor"]
-              ..id = value["id"]
-              ..imagePath = value["deviceImagePath"]
-              ..isPositiveEmotion = value["isPositiveEmotion"]
-              ..imageOnlineStorageDepth = value["imageOnlineStorageDepth"]
-              ..isSelected = true;
-            break;
-          case "평안":
-            emotion = CalmEmotion(
-              lastFeelDate: value["lastFeelDate"],
-            )
-              ..userUid = userUid
-              ..emoji = value["emoji"]
-              ..imageOnlinePath = value["imageOnlinePath"]
-              ..lastFeelTime = value["lastFeelTime"]
-              ..content = value["content"]
-              ..inKor = value["inKor"]
-              ..id = value["id"]
-              ..imagePath = value["deviceImagePath"]
-              ..isPositiveEmotion = value["isPositiveEmotion"]
-              ..imageOnlineStorageDepth = value["imageOnlineStorageDepth"]
-              ..isSelected = true;
-            break;
-          case "두려움":
-            emotion = HorrorEmotion(
-              lastFeelDate: value["lastFeelDate"],
-            )
-              ..userUid = userUid
-              ..emoji = value["emoji"]
-              ..imageOnlinePath = value["imageOnlinePath"]
-              ..lastFeelTime = value["lastFeelTime"]
-              ..content = value["content"]
-              ..inKor = value["inKor"]
-              ..id = value["id"]
-              ..imagePath = value["deviceImagePath"]
-              ..isPositiveEmotion = value["isPositiveEmotion"]
-              ..imageOnlineStorageDepth = value["imageOnlineStorageDepth"]
-              ..isSelected = true;
-            break;
-          case "사랑":
-            emotion = LoveEmotion(
-              lastFeelDate: value["lastFeelDate"],
-            )
-              ..userUid = userUid
-              ..emoji = value["emoji"]
-              ..imageOnlinePath = value["imageOnlinePath"]
-              ..lastFeelTime = value["lastFeelTime"]
-              ..content = value["content"]
-              ..inKor = value["inKor"]
-              ..id = value["id"]
-              ..imagePath = value["deviceImagePath"]
-              ..isPositiveEmotion = value["isPositiveEmotion"]
-              ..imageOnlineStorageDepth = value["imageOnlineStorageDepth"]
-              ..isSelected = true;
-            break;
-          default:
-            emotion = null;
-            break;
-        }
-        bool todayDone = await DiaryDatabase.isTodayDiaryWritten();
-        if (todayDone) {
-          widget.appStateProvider?.setTodaysDiaryDone();
-        } else {
-          widget.appStateProvider?.setTodaysDiaryNotDone();
-        }
-        if (emotion != null) {
-          // DiaryDatabase.clearDiary();
-          DiaryDatabase.insertDiary(emotion);
-        }
+      switch (element["in_kor"]) {
+        case "행복":
+          emotion = HappyEmotion(
+            lastFeelDate: element["last_feel_at"],
+          )
+            ..userUid = me["auth_uid"]
+            ..emoji = element["emoji"]
+            ..imageOnlinePath = element["image_online_path"]
+            ..lastFeelTime = element["last_feel_at"].toString().substring(11)
+            ..content = element["content"]
+            ..inKor = element["in_kor"]
+            ..id = element["id"]
+            ..imagePath = element["image_path"]
+            ..isPositiveEmotion = element["is_positive_emotion"]
+            ..imageOnlineStorageDepth = ""
+            ..isSelected = true;
+          break;
+        case "분노":
+          emotion = AngryEmotion(
+            lastFeelDate: element["last_feel_at"],
+          )
+            ..userUid = me["auth_uid"]
+            ..emoji = element["emoji"]
+            ..imageOnlinePath = element["image_online_path"]
+            ..lastFeelTime = element["last_feel_at"].toString().substring(11)
+            ..content = element["content"]
+            ..inKor = element["in_kor"]
+            ..id = element["id"]
+            ..imagePath = element["image_path"]
+            ..isPositiveEmotion = element["is_positive_emotion"]
+            ..imageOnlineStorageDepth = ""
+            ..isSelected = true;
+
+          break;
+        case "슬픔":
+          emotion = SadEmotion(
+            lastFeelDate: element["last_feel_at"],
+          )
+            ..userUid = me["auth_uid"]
+            ..emoji = element["emoji"]
+            ..imageOnlinePath = element["image_online_path"]
+            ..lastFeelTime = element["last_feel_at"].toString().substring(11)
+            ..content = element["content"]
+            ..inKor = element["in_kor"]
+            ..id = element["id"]
+            ..imagePath = element["image_path"]
+            ..isPositiveEmotion = element["is_positive_emotion"]
+            ..imageOnlineStorageDepth = ""
+            ..isSelected = true;
+          break;
+        case "즐거움":
+          emotion = EnjoyEmotion(
+            lastFeelDate: element["last_feel_at"],
+          )
+            ..userUid = me["auth_uid"]
+            ..emoji = element["emoji"]
+            ..imageOnlinePath = element["image_online_path"]
+            ..lastFeelTime = element["last_feel_at"].toString().substring(11)
+            ..content = element["content"]
+            ..inKor = element["in_kor"]
+            ..id = element["id"]
+            ..imagePath = element["image_path"]
+            ..isPositiveEmotion = element["is_positive_emotion"]
+            ..imageOnlineStorageDepth = ""
+            ..isSelected = true;
+          break;
+        case "우울":
+          emotion = DepressedEmotion(
+            lastFeelDate: element["last_feel_at"],
+          )
+            ..userUid = me["auth_uid"]
+            ..emoji = element["emoji"]
+            ..imageOnlinePath = element["image_online_path"]
+            ..lastFeelTime = element["last_feel_at"].toString().substring(11)
+            ..content = element["content"]
+            ..inKor = element["in_kor"]
+            ..id = element["id"]
+            ..imagePath = element["image_path"]
+            ..isPositiveEmotion = element["is_positive_emotion"]
+            ..imageOnlineStorageDepth = ""
+            ..isSelected = true;
+          break;
+        case "만족":
+          emotion = SatisfiedEmotion(
+            lastFeelDate: element["last_feel_at"],
+          )
+            ..userUid = me["auth_uid"]
+            ..emoji = element["emoji"]
+            ..imageOnlinePath = element["image_online_path"]
+            ..lastFeelTime = element["last_feel_at"].toString().substring(11)
+            ..content = element["content"]
+            ..inKor = element["in_kor"]
+            ..id = element["id"]
+            ..imagePath = element["image_path"]
+            ..isPositiveEmotion = element["is_positive_emotion"]
+            ..imageOnlineStorageDepth = ""
+            ..isSelected = true;
+          break;
+        case "평안":
+          emotion = CalmEmotion(
+            lastFeelDate: element["last_feel_at"],
+          )
+            ..userUid = me["auth_uid"]
+            ..emoji = element["emoji"]
+            ..imageOnlinePath = element["image_online_path"]
+            ..lastFeelTime = element["last_feel_at"].toString().substring(11)
+            ..content = element["content"]
+            ..inKor = element["in_kor"]
+            ..id = element["id"]
+            ..imagePath = element["image_path"]
+            ..isPositiveEmotion = element["is_positive_emotion"]
+            ..imageOnlineStorageDepth = ""
+            ..isSelected = true;
+          break;
+        case "두려움":
+          emotion = HorrorEmotion(
+            lastFeelDate: element["last_feel_at"],
+          )
+            ..userUid = me["auth_uid"]
+            ..emoji = element["emoji"]
+            ..imageOnlinePath = element["image_online_path"]
+            ..lastFeelTime = element["last_feel_at"].toString().substring(11)
+            ..content = element["content"]
+            ..inKor = element["in_kor"]
+            ..id = element["id"]
+            ..imagePath = element["image_path"]
+            ..isPositiveEmotion = element["is_positive_emotion"]
+            ..imageOnlineStorageDepth = ""
+            ..isSelected = true;
+          break;
+        case "사랑":
+          emotion = LoveEmotion(
+            lastFeelDate: element["last_feel_at"],
+          )
+            ..userUid = me["auth_uid"]
+            ..emoji = element["emoji"]
+            ..imageOnlinePath = element["image_online_path"]
+            ..lastFeelTime = element["last_feel_at"].toString().substring(11)
+            ..content = element["content"]
+            ..inKor = element["in_kor"]
+            ..id = element["id"]
+            ..imagePath = element["image_path"]
+            ..isPositiveEmotion = element["is_positive_emotion"]
+            ..imageOnlineStorageDepth = ""
+            ..isSelected = true;
+          break;
+        default:
+          emotion = null;
+          break;
+      }
+      bool todayDone = await DiaryDatabase.isTodayDiaryWritten();
+      if (todayDone) {
+        widget.appStateProvider?.setTodaysDiaryDone();
+      } else {
+        widget.appStateProvider?.setTodaysDiaryNotDone();
+      }
+      if (emotion != null) {
+        // DiaryDatabase.clearDiary();
+        DiaryDatabase.insertDiary(emotion);
       }
     });
   }
@@ -401,7 +398,7 @@ class _ReadPageState extends State<ReadPage>
                     onTap: () {
                       setState(() {
                         filteredDiaries = null;
-                        filterSelection.updateAll((key, value) => false);
+                        filterSelection.updateAll((key, element) => false);
                       });
                     },
                     child: Row(
@@ -771,48 +768,18 @@ class _ReadPageState extends State<ReadPage>
                             ]),
                       ),
                       onDismissed: (_) async {
-                        String userUid =
-                            FirebaseAuth.instance.currentUser?.uid ??
-                                "ERROR_USER";
-                        diaries?[index].forEach((emotion) async {
+                        await Future.forEach((diaries![index]),
+                            (emotion) async {
+                          emotion as Emotion;
                           DiaryDatabase.removeDiary(emotion.id);
-                          DatabaseReference databaseReference =
-                              FirebaseDatabase.instance.ref(
-                            "diaries/${userUid}/${emotion.id.toString().replaceAll(userUid, "")}",
-                          );
-                          databaseReference.remove();
+                          await APIConnector.deleteEmotion(
+                              emotionId: emotion.id);
+                          final response = await APIConnector.getImageDetail(
+                              path: emotion.imageOnlinePath);
+                          await APIConnector.deleteImage(
+                              targetImageId: response["id"]);
+                        });
 
-                          final storageRef = FirebaseStorage.instance.ref();
-                          final itemList = await storageRef
-                              .child(
-                                  "${userUid}/${emotion.id.toString().replaceAll(userUid, "")}")
-                              .listAll();
-                          itemList.items.forEach((element) {
-                            // element as Reference;
-                            element.delete();
-                          });
-                        });
-                        DatabaseReference databaseReference =
-                            FirebaseDatabase.instance.ref("diaries/${userUid}");
-                        DatabaseEvent event = await databaseReference.once();
-                        List<DataSnapshot> children =
-                            event.snapshot.children.toList();
-                        List<DataSnapshot> diaryList = children
-                            .where(
-                                (element) => element.key != "lastDiaryWroteAt")
-                            .toList();
-                        DateTime date = DateTime(2314, 1, 1);
-                        diaryList.forEach((element) {
-                          if (element.key == "lastFeelDate") {
-                            DateTime feelDate =
-                                DateTime.parse(element.value.toString());
-                            if (feelDate.isAfter(date)) {
-                              date = feelDate;
-                            }
-                          }
-                        });
-                        await databaseReference
-                            .set({"lastDiaryWroteAt": date.toString()});
                         bool todayDone =
                             await DiaryDatabase.isTodayDiaryWritten();
                         if (todayDone) {
