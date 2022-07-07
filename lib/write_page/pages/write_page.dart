@@ -18,11 +18,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 //TODO: 이미지 압축 할 것!
 
@@ -155,10 +157,12 @@ class _WritePageState extends State<WritePage> with TickerProviderStateMixin {
                               ),
                               onPressed: () async {
                                 FocusScope.of(context).unfocus();
-                                List<Emotion> selectedEmotion =
-                                    emotionListProvider.emotionList
+                                List<Emotion> selectedEmotion = widget.isEditing
+                                    ? widget.emotionsForEdit
+                                    : emotionListProvider.emotionList
                                         .where((element) => element.isSelected)
                                         .toList();
+
                                 if (selectedEmotion.isEmpty) {
                                   setState(() {
                                     onPressedWhenNoEmotion = true;
@@ -228,7 +232,8 @@ class _WritePageState extends State<WritePage> with TickerProviderStateMixin {
                                 }
                                 //서버
                                 await uploadToServer(
-                                    imageOnlinePaths: selectedImagesPaths);
+                                    imageOnlinePaths: selectedImagesPaths,
+                                    isEdit: widget.isEditing);
 
                                 if (mounted) {
                                   setState(() {
@@ -359,6 +364,11 @@ class _WritePageState extends State<WritePage> with TickerProviderStateMixin {
                                     children: [
                                       InkWell(
                                         onTap: () async {
+                                          var photoPermission =
+                                              await Permission.photos.status;
+                                          if (!photoPermission.isGranted) {
+                                            await Permission.photos.request();
+                                          }
                                           FilePickerResult? result =
                                               await FilePicker.platform
                                                   .pickFiles(
@@ -416,7 +426,33 @@ class _WritePageState extends State<WritePage> with TickerProviderStateMixin {
                                                     isLoading = false;
                                                   });
                                                 } catch (e) {
-                                                  log(e.toString());
+                                                  if (e is DioError) {
+                                                    showCupertinoDialog(
+                                                      context: context,
+                                                      builder: (context) {
+                                                        return CupertinoAlertDialog(
+                                                          title: Text("안내"),
+                                                          content: Text(
+                                                              "용량이 너무 큽니다."),
+                                                          actions: [
+                                                            TextButton(
+                                                              onPressed: () {
+                                                                setState(() {
+                                                                  isLoading =
+                                                                      false;
+                                                                });
+                                                                Navigator.of(
+                                                                        context)
+                                                                    .pop();
+                                                              },
+                                                              child: Text("확인"),
+                                                            ),
+                                                          ],
+                                                        );
+                                                      },
+                                                    );
+                                                    return;
+                                                  }
                                                   setState(() {
                                                     isLoading = false;
                                                   });
@@ -640,6 +676,8 @@ class _WritePageState extends State<WritePage> with TickerProviderStateMixin {
                                                   onChanged: (text) {
                                                     selectedEmotion[i].content =
                                                         text;
+                                                    widget.emotionsForEdit[i]
+                                                        .content = text;
                                                   },
                                                   controller: widget
                                                           .emotionsForEdit
@@ -729,18 +767,27 @@ class _WritePageState extends State<WritePage> with TickerProviderStateMixin {
     return await DiaryDatabase.readDiaries();
   }
 
-  Future<void> uploadToServer({required List<String> imageOnlinePaths}) async {
+  Future<void> uploadToServer(
+      {required List<String> imageOnlinePaths, required bool isEdit}) async {
     List<Emotion>? diaries = await fetchDiariesFromDB();
     if (diaries == null) {
       return;
     }
     await Future.forEach(diaries, (diary) async {
       diary as Emotion;
-      dynamic data = await APIConnector.emotionUpload(diary: diary);
-      int removeTargetId = diary.id;
-      diary.id = data["id"];
-      DiaryDatabase.insertDiary(diary);
-      DiaryDatabase.removeDiary(removeTargetId);
+      dynamic data;
+      if (isEdit) {
+        data =
+            await APIConnector.emotionEdit(diary: diary, emotionId: diary.id);
+      } else {
+        data = await APIConnector.emotionUpload(diary: diary);
+      }
+      if (!isEdit) {
+        int removeTargetId = diary.id;
+        diary.id = data["id"];
+        DiaryDatabase.insertDiary(diary);
+        DiaryDatabase.removeDiary(removeTargetId);
+      }
     });
   }
 }

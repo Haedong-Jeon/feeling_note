@@ -60,6 +60,8 @@ class _ReadPageState extends State<ReadPage>
   Future fetchFromServer() async {
     final allDiaries = await APIConnector.getAllEmotions();
     final me = await APIConnector.getMe();
+    DiaryDatabase.clearDiary();
+    await DiaryDatabase.init();
     return await Future.forEach(allDiaries, (element) async {
       Emotion? emotion;
       element as dynamic;
@@ -221,8 +223,8 @@ class _ReadPageState extends State<ReadPage>
         widget.appStateProvider?.setTodaysDiaryNotDone();
       }
       if (emotion != null) {
-        // DiaryDatabase.clearDiary();
         DiaryDatabase.insertDiary(emotion);
+        setState(() {});
       }
     });
   }
@@ -774,10 +776,15 @@ class _ReadPageState extends State<ReadPage>
                           DiaryDatabase.removeDiary(emotion.id);
                           await APIConnector.deleteEmotion(
                               emotionId: emotion.id);
-                          final response = await APIConnector.getImageDetail(
-                              path: emotion.imageOnlinePath);
-                          await APIConnector.deleteImage(
-                              targetImageId: response["id"]);
+                          await Future.forEach(
+                              emotion.imageOnlinePath.split(","),
+                              (element) async {
+                            element as String;
+                            final response = await APIConnector.getImageDetail(
+                                path: element);
+                            await APIConnector.deleteImage(
+                                targetImageId: response["id"]);
+                          });
                         });
 
                         bool todayDone =

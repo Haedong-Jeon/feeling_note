@@ -20,6 +20,7 @@ import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'; // 다언어 설정
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 
 //일기는 하루에 한번만 쓸 수 있다.
@@ -175,6 +176,11 @@ class _MyAppStartPageState extends ConsumerState<MyAppStartPage>
             TextButton(
               onPressed: () async {
                 await FirebaseAuth.instance.signOut();
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setString("access_token", "");
+                await prefs.setString("access_token_expire_at", "");
+                await prefs.setString("refresh_token", "");
+                await prefs.setString("refresh_token_expire_at", "");
                 appState.todaysDiaryDone = false;
                 appState.showLoginPage(true);
               },

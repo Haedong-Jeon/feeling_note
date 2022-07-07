@@ -72,21 +72,25 @@ class _AppleLoginButtonState extends State<GoogleLoginButton>
                 },
               );
 
-              AccessToken().updateToken(response.data["access_token"].toString());
               AccessToken()
-                  .updateExpireDate(response.data["access_token_expire_at"].toString());
+                  .updateToken(response.data["access_token"].toString());
+              AccessToken().updateExpireDate(
+                  response.data["access_token_expire_at"].toString());
 
-              RefreshToken().updateToken(response.data["refresh_token"].toString());
               RefreshToken()
-                  .updateExpireDate(response.data["refresh_token_expire_at"].toString());
+                  .updateToken(response.data["refresh_token"].toString());
+              RefreshToken().updateExpireDate(
+                  response.data["refresh_token_expire_at"].toString());
 
               final prefs = await SharedPreferences.getInstance();
 
               await prefs.setString("access_token", AccessToken().token);
-              await prefs.setString("access_token_expire_at", AccessToken().expireAt);
+              await prefs.setString(
+                  "access_token_expire_at", AccessToken().expireAt);
 
               await prefs.setString("refresh_token", RefreshToken().token);
-              await prefs.setString("refresh_token_expire_at", RefreshToken().expireAt);
+              await prefs.setString(
+                  "refresh_token_expire_at", RefreshToken().expireAt);
 
               await DiaryDatabase.init();
               bool todayDone = await DiaryDatabase.isTodayDiaryWritten();
@@ -102,13 +106,27 @@ class _AppleLoginButtonState extends State<GoogleLoginButton>
               print(e.toString());
             }
           },
-          child: Text(
-            "구글 로그인",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: Colors.black,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                "G",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black,
+                ),
+              ),
+              SizedBox(width: 10),
+              Text(
+                "구글 로그인",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black,
+                ),
+              ),
+            ],
           ),
           style: ButtonStyle(
             fixedSize: MaterialStateProperty.all<Size>(

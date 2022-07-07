@@ -49,13 +49,20 @@ class _EmailLoginButtonState extends State<EmailLoginButton>
             await scaleAniController.reverse();
             stateProvider.showEmailSignInPage(true);
           },
-          child: Text(
-            "이메일 로그인",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.mail, color: Colors.white),
+              SizedBox(width: 10),
+              Text(
+                "이메일 로그인",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ],
           ),
           style: ButtonStyle(
             fixedSize: MaterialStateProperty.all<Size>(

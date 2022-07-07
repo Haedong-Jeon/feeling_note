@@ -135,14 +135,17 @@ class APIConnector {
     if (!tokenValid) {
       return {"error": "token_expired!"};
     }
+    String date =
+        DateTime.parse(diary.lastFeelDate.replaceAll(".", "-")).toString();
+
     Dio dio = Dio();
     dio.options.headers["token"] = AccessToken().token;
-    final response = await dio.post(
+    final response = await dio.put(
       EmotionUri.edit(emotionId),
       data: {
         "content": diary.content,
         "is_positive_emotion": diary.isPositiveEmotion,
-        "last_feel_at": DateTime.now().toString(),
+        "last_feel_at": date,
         "image_path": diary.imagePath,
         "image_online_path": diary.imageOnlinePath,
         "in_kor": diary.inKor,
